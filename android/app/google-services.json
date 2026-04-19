@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "17065530335",
+    "project_id": "flour-buddy",
+    "storage_bucket": "flour-buddy.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:17065530335:android:6c69a9f29f6973af7baa6a",
+        "android_client_info": {
+          "package_name": "com.flour_buddy_customer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "17065530335-2stf3jejfkgh9brp86tc83qvm50e7856.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.flour_buddy_customer",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "17065530335-8vs43mjueldt8er283p9m5748kld04o9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhZblDvhzJiOpe6Mfinxe2qmt7nouuYww"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "17065530335-8vs43mjueldt8er283p9m5748kld04o9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
