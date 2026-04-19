@@ -6,8 +6,8 @@ const XApiKey = 'e2cfe1ebab87981db56aa5aea4448701';
 //810434911655-q0t1uhv83g0a3m8e2h5jmf1h8aknqnq8.apps.googleusercontent.com
 const webClientId =
   '502266012525-sfb9m6udntavi0p9473hamm6m3vtkqjf.apps.googleusercontent.com';
-// export const GOOGLE_MAPS_APIKEY = 'AIzaSyA_23OZbQeEKQeLfMBTJ6xd3-hCa33tK4A';
-export const GOOGLE_MAPS_APIKEY = 'AIzaSyCCJVEWTfTM7V9n5Qn2csaCyi7dvZopdKU'
+// export const GOOGLE_MAPS_APIKEY = '';
+export const GOOGLE_MAPS_APIKEY = ''
 
 export const CASHFREE_KEY = 'https://api.cashfree.com/api/v2/cftoken/order'; //LIVE KEY
 export const CLIENT_SECRET_KEY = 'bbb212ba075a3a2b7c122eeb01e257a85110ac9e'; //TEST KEY
