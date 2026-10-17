@@ -14,6 +14,7 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {
   responsiveWidth,
@@ -21,6 +22,7 @@ import {
   responsiveFontSize,
 } from 'react-native-responsive-dimensions';
 import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -29,93 +31,99 @@ const Loginscreen = ({ navigation }) => {
   const [mobile, setMobile] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId:
+        '95489986202-0g49t8qdf2pn4cr1tf2vplfafnot0cpj.apps.googleusercontent.com',
+      offlineAccess: true,
+    });
+    checkUserLogin();
+  }, []);
+
+  const checkUserLogin = async () => {
+    try {
+      const user = await AsyncStorage.getItem('userProfile');
+      const mobileUser = await AsyncStorage.getItem('userMobile');
+      if (user || mobileUser) {
+        navigation.replace('Main');
+      }
+    } catch (e) {
+      console.log('Login Error', e);
+    }
+  };
+
   const handleSendOTP = async () => {
-if (mobile.length !== 10) {
-      Alert.alert('Invalid Number', 'Please enter a valid 10-digit mobile number');
+    if (mobile.length !== 10) {
+      Alert.alert(
+        'Invalid Number',
+        'Please enter a valid 10-digit mobile number',
+      );
       return;
     }
-
     setLoading(true);
     try {
-      // Stores the mobile number to keep the session
-      await AsyncStorage.setItem('userMobile', mobile); 
-      // Replace ensures user cannot go back to login screen with back button
-      navigation.navigate('OTPscreen'); 
+      const formattedMobile = `+91${mobile}`;
+      const confirmation = await auth().signInWithPhoneNumber(formattedMobile);
+
+      await AsyncStorage.setItem('userMobile', mobile);
+      navigation.navigate('OTPscreen', { confirmation });
     } catch (error) {
-      Alert.alert('Login Error', 'Something went wrong. Please try again.');
+      console.log('Phone Auth Error:', error);
+      Alert.alert(
+        'Login Error',
+        error.message || 'Something went wrong. Please try again.',
+      );
     } finally {
       setLoading(false);
     }
   };
 
-// used to INITIALIZE the Google SIgn IN
-  useEffect(() => {
-    GoogleSignin.configure({ //connects app with google
-      webClientId:
-        '17065530335-8vs43mjueldt8er283p9m5748kld04o9.apps.googleusercontent.com',  //required for getting id token
-     offlineAccess: true,
-    });
+  const googleLogin = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      await GoogleSignin.signOut().catch(() => {});
+      const response = await GoogleSignin.signIn();
+      const idToken =
+        response.idToken || (response.data && response.data.idToken);
 
-    checkUserLogin();  // check for loggedin user
-  }, []);
-
-  const checkUserLogin = async() => {
-    try{
-      const user = await AsyncStorage.getItem('user');
-const mobileUser = await AsyncStorage.getItem('userMobile');
-      if(user || mobileUser){
-        console.log('user already loggedin');
-        navigation.navigate('Main')  // if user is already loggedin move to home screen
+      if (!idToken) {
+        Alert.alert('Login Error', 'No ID Token found.');
+        return;
       }
-    }catch (e){
-      console.log("Login error", e)
+
+      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+      const user = await auth().signInWithCredential(googleCredential);
+
+      const userData = {
+        customerId: user.user.uid,
+        name: user.user.displayName || '',
+        email: user.user.email || '',
+        photo: user.user.photoURL || '',
+        phone: user.user.phoneNumber || '',
+        address: '',
+        createdAt: firestore.FieldValue.serverTimestamp(),
+      };
+
+      await firestore()
+        .collection('customers')
+        .doc(user.user.uid)
+        .set(userData, { merge: true });
+
+      await AsyncStorage.setItem('userProfile', JSON.stringify(userData));
+      if (userData.phone) {
+        await AsyncStorage.setItem('userMobile', userData.phone);
+      }
+
+      navigation.replace('Main');
+    } catch (error) {
+      console.log(error);
+      Alert.alert('Google Login Error', error.message);
     }
-  }
-
-const googleLogin = async () => {
-  try {
-    await GoogleSignin.hasPlayServices();
-     await GoogleSignin.signOut().catch(() => {});
-    
-    //open the popus to choose mail
-    const response = await GoogleSignin.signIn();
-      
-    // check id tkon under response.data and prrof that user logged in
-    const idToken = response.idToken || (response.data && response.data.idToken);
-
-    if (!idToken) {
-      console.log("Full Response:", response); 
-      Alert.alert('Login Error', 'No ID Token found.');
-      return;
-    }
-// convert google token into firbase credentails
-    const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-
-    //loggedin user into firebase
-    const user = await auth().signInWithCredential(googleCredential);
-
-const userData = {
-  name: user.user.displayName,
-  email: user.user.email,
-  photo: user.user.photoURL,
-  uid: user.user.uid,
-  mobile: user.user.phoneNumber || '', // Initialize mobile if available
-};
-    console.log('Logged In User:', userData);
-    
-    await AsyncStorage.setItem('userProfile', JSON.stringify(userData));
-await AsyncStorage.setItem('userMobile', userData.mobile);
-    navigation.navigate('Main');
-
-  } catch (error) {
-    console.log('Google Login Detail Error:', error);
-    Alert.alert('Login Error', error.message);
-  }
-};
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -131,16 +139,15 @@ await AsyncStorage.setItem('userMobile', userData.mobile);
                 source={require('../../assets/images/Login.png')}
                 style={styles.logo}
               />
-              <TouchableOpacity
-              onPress={() => navigation.replace('Main')}
-              >
+              <TouchableOpacity onPress={() => navigation.replace('Main')}>
                 <Text style={styles.skipText}>Skip</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.content}>
-              <Text style={styles.titleText}>
-                Login to access amazing features
+              <Text style={styles.titleText}>Welcome Back 👋</Text>
+              <Text style={styles.subtitle}>
+                Login to continue shopping fresh groceries
               </Text>
 
               <View style={styles.inputSection}>
@@ -149,21 +156,19 @@ await AsyncStorage.setItem('userMobile', userData.mobile);
                   <Text style={styles.countryCode}>+91</Text>
                   <TextInput
                     style={styles.textInput}
-                    placeholder=" "
-                    placeholderTextColor="#7C7C7C"
+                    placeholder="Enter Mobile Number"
+                    placeholderTextColor="#999"
                     value={mobile}
                     onChangeText={setMobile}
                     keyboardType="number-pad"
                     maxLength={10}
-                    autoFocus={true}
                   />
                 </View>
-                <View style={styles.underline} />
               </View>
 
               <View style={styles.footer}>
                 <Text style={styles.termsText}>
-                  By going forward you accept{' '}
+                  By continuing you agree to our{' '}
                   <Text style={styles.termsLink}>Terms & Conditions</Text>
                 </Text>
 
@@ -171,23 +176,27 @@ await AsyncStorage.setItem('userMobile', userData.mobile);
                   style={styles.loginBtn}
                   onPress={handleSendOTP}
                   disabled={loading}
+                  activeOpacity={0.85}
                 >
-                  <Text style={styles.loginBtnText}>
-                    {loading ? 'Sending...' : 'Send OTP'}
-                  </Text>
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.loginBtnText}>Send OTP</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
 
             <View style={styles.social}>
-              <TouchableOpacity style={styles.googleBtn} onPress={googleLogin}>
-                <AntDesign name="google" size={20} color="#fff" />
-                <Text style={styles.googleText}>
-                  Continue with Google
-                </Text>
+              <TouchableOpacity
+                style={styles.googleBtn}
+                onPress={googleLogin}
+                activeOpacity={0.85}
+              >
+                <AntDesign name="google" size={22} color="#fff" />
+                <Text style={styles.googleText}>Continue with Google</Text>
               </TouchableOpacity>
             </View>
-
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -205,117 +214,144 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     paddingHorizontal: responsiveWidth(6),
+    paddingBottom: responsiveHeight(4),
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: responsiveHeight(2),
-    height: responsiveHeight(10),
+    marginTop: responsiveHeight(3),
   },
   logo: {
-    width: responsiveWidth(35),
-    height: responsiveHeight(6),
+    width: responsiveWidth(40),
+    height: responsiveHeight(7),
     resizeMode: 'contain',
   },
   skipText: {
-    fontSize: responsiveFontSize(2),
+    fontSize: responsiveFontSize(1.9),
     color: '#7C7C7C',
-    fontFamily: 'Raleway-Medium',
+    fontWeight: '700',
   },
   content: {
-    marginTop: responsiveHeight(4),
+    marginTop: responsiveHeight(5),
+    backgroundColor: '#FFFFFF',
+    borderRadius: 30,
+    paddingHorizontal: responsiveWidth(6),
+    paddingVertical: responsiveHeight(4),
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 5,
   },
   titleText: {
-    fontSize: responsiveFontSize(2.6),
-    fontWeight: '600',
+    fontSize: responsiveFontSize(3.2),
     color: '#181725',
-    marginBottom: responsiveHeight(6),
-    fontFamily: 'Raleway-Bold',
+    fontWeight: '800',
+    lineHeight: 40,
+  },
+  subtitle: {
+    marginTop: responsiveHeight(1),
+    color: '#7C7C7C',
+    fontSize: responsiveFontSize(1.8),
+    lineHeight: 24,
   },
   inputSection: {
-    marginBottom: responsiveHeight(2),
+    marginTop: responsiveHeight(5),
   },
   label: {
     fontSize: responsiveFontSize(1.8),
     color: '#7C7C7C',
-    marginBottom: responsiveHeight(1),
+    marginBottom: responsiveHeight(1.5),
+    fontWeight: '600',
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: responsiveHeight(4),
+    height: responsiveHeight(7.5),
+    backgroundColor: '#F7F7F7',
+    borderRadius: 18,
+    paddingHorizontal: responsiveWidth(4),
+    borderWidth: 1,
+    borderColor: '#ECECEC',
   },
   countryCode: {
-    fontSize: responsiveFontSize(2.2),
-    fontWeight: '500',
+    fontSize: responsiveFontSize(2.1),
+    fontWeight: '700',
     color: '#181725',
-    marginRight: 10,
+    marginRight: responsiveWidth(3),
   },
   textInput: {
     flex: 1,
-    fontSize: responsiveFontSize(2.2),
+    fontSize: responsiveFontSize(2),
     color: '#181725',
-    padding: 0,
-    letterSpacing: 1,
-  },
-  underline: {
-    height: 1,
-    backgroundColor: '#E2E2E2',
-    marginTop: 8,
+    fontWeight: '600',
   },
   footer: {
-    marginTop: responsiveHeight(15),
+    marginTop: responsiveHeight(8),
     alignItems: 'center',
   },
   termsText: {
     textAlign: 'center',
-    fontSize: responsiveFontSize(1.4),
+    fontSize: responsiveFontSize(1.45),
     color: '#7C7C7C',
-    marginBottom: responsiveHeight(2),
+    lineHeight: 22,
+    marginBottom: responsiveHeight(3),
   },
   termsLink: {
     color: '#BC8A45',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   loginBtn: {
-    height: responsiveHeight(7),
+    height: responsiveHeight(7.2),
     width: '100%',
     backgroundColor: '#BC8A45',
-    borderRadius: 12,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowColor: '#BC8A45',
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
   },
   loginBtnText: {
     color: '#FFF',
-    fontSize: responsiveFontSize(2.2),
-    fontWeight: '600',
+    fontSize: responsiveFontSize(2),
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   social: {
-    marginTop: responsiveHeight(6),
+    marginTop: responsiveHeight(5),
     alignItems: 'center',
   },
-
   googleBtn: {
     flexDirection: 'row',
     backgroundColor: '#DB4437',
-    padding: 14,
-    borderRadius: 10,
+    height: responsiveHeight(7),
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+    shadowColor: '#DB4437',
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 6,
   },
-
   googleText: {
     color: '#fff',
-    marginLeft: 10,
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Raleway-SemiBold',
+    marginLeft: responsiveWidth(3),
+    fontSize: responsiveFontSize(1.9),
+    fontWeight: '700',
   },
 });

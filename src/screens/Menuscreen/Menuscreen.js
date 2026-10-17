@@ -1,3 +1,4 @@
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,8 +10,8 @@ import {
   FlatList,
   Image,
   Modal,
+  StatusBar,
 } from 'react-native';
-import React, { useState, useMemo } from 'react';
 import {
   responsiveWidth,
   responsiveHeight,
@@ -19,7 +20,6 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, removeFromCart } from '../../redux/cartSlice';
-
 import menuData from '../../components/menu';
 
 const Menuscreen = ({ navigation }) => {
@@ -28,7 +28,6 @@ const Menuscreen = ({ navigation }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedCoarse, setSelectedCoarse] = useState('Standard');
 
-  // Local state to manage quantities for different units in the modal independently
   const [unitQuantities, setUnitQuantities] = useState({
     '500 gm': 0,
     '1 kg': 0,
@@ -47,10 +46,8 @@ const Menuscreen = ({ navigation }) => {
     return ['All', 'Wheat Flour', 'Millets Flour', 'Besan', 'Spices'];
   }, []);
 
-  const filteredData = useMemo(() =>
-     {
-    if (selectedCategory === 'All')
-       return menuData;
+  const filteredData = useMemo(() => {
+    if (selectedCategory === 'All') return menuData;
     return menuData.filter(
       item =>
         item.name.toLowerCase().includes(selectedCategory.toLowerCase()) ||
@@ -60,7 +57,6 @@ const Menuscreen = ({ navigation }) => {
 
   const handleOpenModal = item => {
     setSelectedItem(item);
-    // Reset modal local quantities when opening for a new item
     setUnitQuantities({ '500 gm': 0, '1 kg': 0, '2 kg': 0 });
     setModalVisible(true);
   };
@@ -85,7 +81,7 @@ const Menuscreen = ({ navigation }) => {
               {item.name}
             </Text>
           </View>
-          <Text style={styles.price}>₹ {item.price}</Text>
+          <Text style={styles.price}>₹{item.price}</Text>
         </View>
 
         <View style={styles.footerContainer}>
@@ -97,8 +93,8 @@ const Menuscreen = ({ navigation }) => {
               >
                 <Ionicons
                   name="remove"
-                  size={responsiveFontSize(2)}
-                  color="#fff"
+                  size={16}
+                  color="#FFF"
                 />
               </TouchableOpacity>
               <Text style={styles.qtyText}>{quantity}</Text>
@@ -108,8 +104,8 @@ const Menuscreen = ({ navigation }) => {
               >
                 <Ionicons
                   name="add"
-                  size={responsiveFontSize(2)}
-                  color="#fff"
+                  size={16}
+                  color="#FFF"
                 />
               </TouchableOpacity>
             </View>
@@ -117,8 +113,9 @@ const Menuscreen = ({ navigation }) => {
             <TouchableOpacity
               style={styles.addBtn}
               onPress={() => handleOpenModal(item)}
+              activeOpacity={0.85}
             >
-              <Text style={styles.addText}>ADD</Text>
+              <Ionicons name="add" size={18} color="#FFF" />
             </TouchableOpacity>
           )}
         </View>
@@ -133,7 +130,7 @@ const Menuscreen = ({ navigation }) => {
       <View style={styles.unitItem}>
         <View>
           <Text style={styles.unitText}>{unitLabel}</Text>
-          <Text style={styles.unitPrice}>₹ {price}</Text>
+          <Text style={styles.unitPrice}>₹{price}</Text>
         </View>
         {qty > 0 ? (
           <View style={styles.modalCounter}>
@@ -141,20 +138,21 @@ const Menuscreen = ({ navigation }) => {
               style={styles.modalQtyBtn}
               onPress={() => updateUnitQty(unitLabel, -1)}
             >
-              <Ionicons name="remove" size={18} color="#000" />
+              <Ionicons name="remove" size={16} color="#FFF" />
             </TouchableOpacity>
             <Text style={styles.modalQtyText}>{qty}</Text>
             <TouchableOpacity
               style={styles.modalQtyBtn}
               onPress={() => updateUnitQty(unitLabel, 1)}
             >
-              <Ionicons name="add" size={18} color="#000" />
+              <Ionicons name="add" size={16} color="#FFF" />
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity
             style={styles.modalAddBtn}
             onPress={() => updateUnitQty(unitLabel, 1)}
+            activeOpacity={0.85}
           >
             <Text style={styles.modalAddText}>ADD</Text>
           </TouchableOpacity>
@@ -165,33 +163,34 @@ const Menuscreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.headerRow}>
           <View style={styles.leftHeader}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Ionicons name="chevron-back" size={28} color="#000" />
+            <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7} style={styles.backBtn}>
+              <Ionicons name="chevron-back" size={24} color="#181725" />
             </TouchableOpacity>
             <Text style={styles.headerText}>Menu</Text>
           </View>
           <View style={styles.rightHeader}>
-            <TouchableOpacity style={styles.iconBtn}>
-              <Ionicons name="options-outline" size={24} color="#000" />
+            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
+              <Ionicons name="search-outline" size={22} color="#181725" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconBtn}>
-              <Ionicons name="search-outline" size={24} color="#000" />
+            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
+              <Ionicons name="options-outline" size={22} color="#181725" />
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={{ height: responsiveHeight(8) }}>
+        <View style={styles.categoryContainer}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.list}
-            contentContainerStyle={{ alignItems: 'center', paddingRight: 20 }}
+            contentContainerStyle={styles.listContent}
           >
             {categories.map((category, index) => (
               <TouchableOpacity
@@ -201,6 +200,7 @@ const Menuscreen = ({ navigation }) => {
                   selectedCategory === category && styles.activeCategory,
                 ]}
                 onPress={() => setSelectedCategory(category)}
+                activeOpacity={0.85}
               >
                 <Text
                   style={[
@@ -228,11 +228,12 @@ const Menuscreen = ({ navigation }) => {
             <TouchableOpacity
               style={styles.viewCartButton}
               onPress={() => navigation.navigate('Viewcartscreen')}
+              activeOpacity={0.95}
             >
-              <Text style={styles.viewCartQtyText}>{totalQuantity} Items</Text>
+              <Text style={styles.viewCartQtyText}>{totalQuantity} {totalQuantity === 1 ? 'Item' : 'Items'} Added</Text>
               <View style={styles.viewCartRight}>
                 <Text style={styles.viewCartText}>View Cart</Text>
-                <Ionicons name="chevron-forward" size={18} color="#fff" />
+                <Ionicons name="basket" size={20} color="#FFF" />
               </View>
             </TouchableOpacity>
           </View>
@@ -252,9 +253,9 @@ const Menuscreen = ({ navigation }) => {
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Option</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#000" />
+              <Text style={styles.modalTitle}>Customize Item</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+                <Ionicons name="close" size={22} color="#181725" />
               </TouchableOpacity>
             </View>
 
@@ -275,9 +276,9 @@ const Menuscreen = ({ navigation }) => {
               {renderModalUnit('2 kg', 1500)}
 
               <View style={styles.moreSettingsContainer}>
-                <TouchableOpacity style={styles.moreSettingsBtn}>
+                <TouchableOpacity style={styles.moreSettingsBtn} activeOpacity={0.8}>
                   <Text style={styles.moreSettingsText}>More Settings</Text>
-                  <Ionicons name="chevron-down" size={16} color="#000" />
+                  <Ionicons name="chevron-down" size={16} color="#181725" />
                 </TouchableOpacity>
               </View>
 
@@ -288,6 +289,7 @@ const Menuscreen = ({ navigation }) => {
                     key={type}
                     style={styles.radioRow}
                     onPress={() => setSelectedCoarse(type)}
+                    activeOpacity={0.8}
                   >
                     <Text style={styles.radioText}>{type}</Text>
                     <Ionicons
@@ -306,11 +308,10 @@ const Menuscreen = ({ navigation }) => {
 
             <TouchableOpacity
               style={styles.checkoutBtn}
+              activeOpacity={0.9}
               onPress={() => {
-                // Dispatch all units that have qty > 0 to Redux
                 Object.keys(unitQuantities).forEach(unit => {
                   if (unitQuantities[unit] > 0) {
-                    // Standard way: include unit/coarse in the object for the cart
                     dispatch(
                       addToCart({
                         ...selectedItem,
@@ -324,7 +325,7 @@ const Menuscreen = ({ navigation }) => {
                 setModalVisible(false);
               }}
             >
-              <Text style={styles.checkoutText}>Add Item</Text>
+              <Text style={styles.checkoutText}>Add To Basket</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -334,315 +335,350 @@ const Menuscreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: responsiveHeight(6),
-    paddingHorizontal: responsiveWidth(5),
+  container:{
+    flex:1,
+    backgroundColor:'#FFFFFF',
   },
-  leftHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  headerRow:{
+    flexDirection:'row',
+    alignItems:'center',
+    justifyContent:'space-between',
+    paddingTop:Platform.OS==='ios'?responsiveHeight(2):responsiveHeight(1.5),
+    paddingBottom:responsiveHeight(1.5),
+    paddingHorizontal:responsiveWidth(5),
+    borderBottomWidth:1,
+    borderColor:'#F8F8F8',
   },
-  headerText: {
-    fontSize: responsiveFontSize(3),
-    fontFamily: 'Raleway-SemiBold',
-    marginLeft: responsiveWidth(2),
-    color: '#000',
+  leftHeader:{
+    flexDirection:'row',
+    alignItems:'center',
   },
-  rightHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  backBtn:{
+    width:responsiveWidth(10),
+    height:responsiveWidth(10),
+    borderRadius:50,
+    backgroundColor:'#F8F8F8',
+    justifyContent:'center',
+    alignItems:'center',
+    marginRight:responsiveWidth(3),
   },
-  iconBtn: {
-    marginLeft: responsiveWidth(4),
+  headerText:{
+    fontSize:responsiveFontSize(2.5),
+    fontFamily:'Poppins-Bold',
+    color:'#181725',
   },
-  list: {
-    marginTop: responsiveHeight(1),
-    paddingLeft: responsiveWidth(5),
+  rightHeader:{
+    flexDirection:'row',
+    alignItems:'center',
   },
-  categoryItem: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#E2E2E2',
-    paddingHorizontal: responsiveWidth(5),
-    marginRight: responsiveWidth(3),
-    borderRadius: responsiveWidth(10),
-    height: responsiveHeight(4.5),
-    justifyContent: 'center',
+  iconBtn:{
+    width:responsiveWidth(10),
+    height:responsiveWidth(10),
+    borderRadius:50,
+    backgroundColor:'#F8F8F8',
+    justifyContent:'center',
+    alignItems:'center',
+    marginLeft:responsiveWidth(2.5),
   },
-  activeCategory: {
-    backgroundColor: '#BD8D46',
-    borderColor: '#BD8D46',
+  categoryContainer:{
+    height:responsiveHeight(7.5),
+    justifyContent:'center',
   },
-  categoryText: {
-    fontSize: responsiveFontSize(1.7),
-    fontFamily: 'Raleway-Medium',
-    color: '#7C7C7C',
+  list:{
+    paddingLeft:responsiveWidth(5),
   },
-  activeCategoryText: {
-    color: '#fff',
+  listContent:{
+    alignItems:'center',
+    paddingRight:responsiveWidth(8),
   },
-  verticalListContent: {
-    paddingHorizontal: responsiveWidth(5),
-    paddingBottom: responsiveHeight(15),
+  categoryItem:{
+    backgroundColor:'#F8F8F8',
+    borderWidth:1,
+    borderColor:'#E2E2E2',
+    paddingHorizontal:responsiveWidth(4.5),
+    marginRight:responsiveWidth(2.5),
+    borderRadius:100,
+    height:responsiveHeight(4.5),
+    justifyContent:'center',
+    alignItems:'center',
   },
-  card: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: responsiveWidth(4),
-    padding: responsiveWidth(3),
-    marginBottom: responsiveHeight(2),
-    // elevation: 2,
-    // shadowColor: '#000',
-    // shadowOpacity: 0.1,
-    // shadowRadius: 10,
-    // shadowOffset: { width: 0, height: 4 },
-    borderWidth:0.2
-    
+  activeCategory:{
+    backgroundColor:'#BD8D46',
+    borderColor:'#BD8D46',
   },
-  img: {
-    width: responsiveWidth(20),
-    height: responsiveHeight(12),
-    //     backgroundColor: '#fff',
-    // borderWidth: 1,
-    // borderColor: '#E2E2E2',
-    // paddingHorizontal: responsiveWidth(5),
-    // marginRight: responsiveWidth(3),
-    // borderRadius: responsiveWidth(10),
-    // height: responsiveHeight(4.5),
-    // justifyContent: 'center',
-    borderRadius: responsiveWidth(2),
-    resizeMode: 'contain',
+  categoryText:{
+    fontSize:responsiveFontSize(1.7),
+    fontFamily:'Poppins-SemiBold',
+    color:'#7C7C7C',
   },
-  infoContainer: {
-    flex: 1,
-    marginLeft: responsiveWidth(4),
-    justifyContent: 'space-between',
-    paddingVertical: responsiveHeight(0.5),
+  activeCategoryText:{
+    color:'#FFFFFF',
   },
-  nameWrapper: {
-    minHeight: responsiveHeight(5.5),
+  verticalListContent:{
+    paddingHorizontal:responsiveWidth(5),
+    paddingTop:responsiveHeight(1.5),
+    paddingBottom:responsiveHeight(15),
   },
-  name: {
-    fontSize: responsiveFontSize(2.1),
-    fontFamily: 'Raleway-SemiBold',
-    color: '#181725',
-    lineHeight: responsiveFontSize(2.6),
+  card:{
+    flexDirection:'row',
+    backgroundColor:'#FFFFFF',
+    borderRadius:20,
+    padding:responsiveWidth(3),
+    marginBottom:responsiveHeight(2),
+    elevation:4,
+    shadowColor:'#000',
+    shadowOffset:{width:0,height:2},
+    shadowOpacity:0.05,
+    shadowRadius:5,
+    borderWidth:1,
+    borderColor:'#F2F3F2',
   },
-  price: {
-    fontSize: responsiveFontSize(2.2),
-    fontFamily: 'Poppins-Bold',
-    color: '#181725',
+  img:{
+    width:responsiveWidth(22),
+    height:responsiveHeight(12),
+    borderRadius:14,
+    resizeMode:'contain',
   },
-  footerContainer: {
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingBottom: responsiveHeight(0.5),
+  infoContainer:{
+    flex:1,
+    marginLeft:responsiveWidth(4),
+    justifyContent:'space-between',
+    paddingVertical:responsiveHeight(0.1),
   },
-  addBtn: {
-    backgroundColor: '#BD8D46',
-    paddingHorizontal: responsiveWidth(6),
-    paddingVertical: responsiveHeight(1),
-        // paddingHorizontal: responsiveWidth(5),
-    // marginRight: responsiveWidth(3),
-    // borderRadius: responsiveWidth(10),
-    borderRadius: responsiveWidth(2),
-    minWidth: responsiveWidth(25),
-    alignItems: 'center',
+  nameWrapper:{
+    minHeight:responsiveHeight(5.5),
   },
-  addText: {
-    color: '#fff',
-    fontSize: responsiveFontSize(1.6),
-    fontWeight: 'bold',
+  name:{
+    fontSize:responsiveFontSize(1.6),
+    fontFamily:'Poppins-SemiBold',
+    color:'#181725',
+    lineHeight:responsiveFontSize(2.5),
   },
-  counterContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#BD8D46',
-    borderRadius: responsiveWidth(2),
-    
-    paddingHorizontal: responsiveWidth(1),
-    height: responsiveHeight(4.5),
-    minWidth: responsiveWidth(25),
-    justifyContent: 'space-between',
+  price:{
+    fontSize:responsiveFontSize(2.1),
+    fontFamily:'Poppins-Bold',
+    color:'#181725',
   },
-  qtyBtn: {
-    padding: responsiveWidth(1),
+  footerContainer:{
+    justifyContent:'flex-end',
+    alignItems:'center',
+    paddingBottom:responsiveHeight(0.5),
   },
-  qtyText: {
-    color: '#fff',
-    fontSize: responsiveFontSize(1.8),
-    fontWeight: 'bold',
+  addBtn:{
+    backgroundColor:'#BD8D46',
+    width:34,
+    height:34,
+    borderRadius:12,
+    justifyContent:'center',
+    alignItems:'center',
   },
-  viewCartContainer: {
-    position: 'absolute',
-    bottom: responsiveHeight(4),
-    left: responsiveWidth(5),
-    right: responsiveWidth(5),
+  counterContainer:{
+    flexDirection:'row',
+    alignItems:'center',
+    backgroundColor:'#BD8D46',
+    borderRadius:12,
+    paddingHorizontal:5,
+    height:34,
   },
-  viewCartButton: {
-    backgroundColor: '#BD8D46',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-        // paddingHorizontal: responsiveWidth(5),
-    // marginRight: responsiveWidth(3),
-    // borderRadius: responsiveWidth(10),
-    paddingHorizontal: responsiveWidth(6),
-    paddingVertical: responsiveHeight(2),
-    borderRadius: responsiveWidth(3),
+  qtyBtn:{
+    padding:4,
   },
-  viewCartQtyText: {
-    color: '#fff',
-    fontSize: responsiveFontSize(2),
-    fontWeight: '600',
+  qtyText:{
+    color:'#FFFFFF',
+    fontSize:responsiveFontSize(1.7),
+    fontFamily:'Poppins-Bold',
+    marginHorizontal:8,
   },
-  viewCartRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  viewCartContainer:{
+    position:'absolute',
+    bottom:responsiveHeight(2),
+    left:responsiveWidth(5),
+    right:responsiveWidth(5),
   },
-  viewCartText: {
-    color: '#fff',
-    fontSize: responsiveFontSize(2),
-    fontWeight: '600',
-    marginRight: 5,
+  viewCartButton:{
+    backgroundColor:'#BD8D46',
+    flexDirection:'row',
+    justifyContent:'space-between',
+    alignItems:'center',
+    paddingHorizontal:responsiveWidth(6),
+    paddingVertical:responsiveHeight(2),
+    borderRadius:20,
+    elevation:6,
+    shadowColor:'#BD8D46',
+    shadowOffset:{width:0,height:4},
+    shadowOpacity:0.3,
+    shadowRadius:8,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+  viewCartQtyText:{
+    color:'#FFFFFF',
+    fontSize:responsiveFontSize(1.9),
+    fontFamily:'Poppins-Bold',
   },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: responsiveWidth(6),
-    maxHeight: responsiveHeight(85),
+  viewCartRight:{
+    flexDirection:'row',
+    alignItems:'center',
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-
-        // paddingHorizontal: responsiveWidth(5),
-    // marginRight: responsiveWidth(3),
-    // borderRadius: responsiveWidth(10),
-    marginBottom: 15,
+  viewCartText:{
+    color:'#FFFFFF',
+    fontSize:responsiveFontSize(2),
+    fontFamily:'Poppins-Bold',
+    marginRight:6,
   },
-  modalTitle: {
-    fontSize: responsiveFontSize(2.2),
-    fontFamily: 'Raleway-Bold',
-    color: '#000',
+  modalOverlay:{
+    flex:1,
+    backgroundColor:'rgba(0,0,0,0.45)',
+    justifyContent:'flex-end',
   },
-  productTitle: {
-    fontSize: responsiveFontSize(2.4),
-    fontFamily: 'Raleway-Bold',
-    color: '#000',
-    marginBottom: 10,
+  modalContent:{
+    backgroundColor:'#FFFFFF',
+    borderTopLeftRadius:28,
+    borderTopRightRadius:28,
+    padding:responsiveWidth(6),
+    maxHeight:responsiveHeight(85),
   },
-  productDesc: {
-    fontSize: responsiveFontSize(1.6),
-    color: '#7C7C7C',
-    lineHeight: 20,
-    marginBottom: 15,
+  modalHeader:{
+    flexDirection:'row',
+    justifyContent:'space-between',
+    alignItems:'center',
+    marginBottom:responsiveHeight(2),
   },
-  seeMore: {
-    color: '#000',
-    fontWeight: 'bold',
+  closeBtn:{
+    width:32,
+    height:32,
+    borderRadius:16,
+    backgroundColor:'#F5F5F5',
+    justifyContent:'center',
+    alignItems:'center',
   },
-  selectUnitTitle: {
-    fontSize: responsiveFontSize(2),
-    color: '#BD8D46',
-    fontFamily: 'Raleway-Bold',
-    marginBottom: 15,
+  modalTitle:{
+    fontSize:responsiveFontSize(2.3),
+    fontFamily:'Poppins-Bold',
+    color:'#181725',
   },
-  unitItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+  productTitle:{
+    fontSize:responsiveFontSize(2.5),
+    fontFamily:'Poppins-Bold',
+    color:'#181725',
+    marginBottom:10,
   },
-  unitText: {
-    fontSize: responsiveFontSize(2),
-    color: '#000',
+  productDesc:{
+    fontSize:responsiveFontSize(1.6),
+    color:'#7C7C7C',
+    lineHeight:22,
+    marginBottom:20,
+    fontFamily:'Poppins-Regular',
   },
-  unitPrice: {
-    fontSize: responsiveFontSize(1.8),
-    color: '#BD8D46',
-    fontWeight: 'bold',
+  seeMore:{
+    color:'#BD8D46',
+    fontFamily:'Poppins-SemiBold',
   },
-  modalCounter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F2F3F2',
-    borderRadius: 8,
-    padding: 5,
+  selectUnitTitle:{
+    fontSize:responsiveFontSize(2),
+    color:'#181725',
+    fontFamily:'Poppins-Bold',
+    marginBottom:15,
   },
-  modalQtyBtn: {
-    padding: 5,
+  unitItem:{
+    flexDirection:'row',
+    justifyContent:'space-between',
+    alignItems:'center',
+    backgroundColor:'#FDFDFD',
+    borderWidth:1,
+    borderColor:'#F2F3F2',
+    paddingHorizontal:responsiveWidth(4),
+    paddingVertical:responsiveHeight(1.5),
+    borderRadius:16,
+    marginBottom:12,
   },
-  modalQtyText: {
-    marginHorizontal: 15,
-    fontSize: 16,
-    fontWeight: 'bold',
+  unitText:{
+    fontSize:responsiveFontSize(1.9),
+    fontFamily:'Poppins-Medium',
+    color:'#181725',
   },
-  modalAddBtn: {
-    backgroundColor: '#BD8D46',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 15,
+  unitPrice:{
+    fontSize:responsiveFontSize(1.8),
+    color:'#BD8D46',
+    fontFamily:'Poppins-Bold',
+    marginTop:2,
   },
-  modalAddText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  modalCounter:{
+    flexDirection:'row',
+    alignItems:'center',
+    backgroundColor:'#BD8D46',
+    borderRadius:12,
+    paddingHorizontal:6,
+    height:34,
   },
-  moreSettingsContainer: {
-    marginBottom: 20,
+  modalQtyBtn:{
+    padding:2,
   },
-  moreSettingsBtn: {
-    flexDirection: 'row',
-        // paddingHorizontal: responsiveWidth(5),
-    // marginRight: responsiveWidth(3),
-    // borderRadius: responsiveWidth(10),
-    alignItems: 'center',
-    backgroundColor: '#F2F3F2',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
+  modalQtyText:{
+    marginHorizontal:12,
+    fontSize:16,
+    fontFamily:'Poppins-Bold',
+    color:'#FFFFFF',
   },
-  moreSettingsText: {
-    fontSize: 14,
-    color: '#000',
-    marginRight: 5,
+  modalAddBtn:{
+    backgroundColor:'#BD8D46',
+    paddingHorizontal:18,
+    paddingVertical:6,
+    borderRadius:12,
   },
-  radioRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
+  modalAddText:{
+    color:'#FFFFFF',
+    fontFamily:'Poppins-Bold',
+    fontSize:15,
   },
-
-  radioText: {
-    fontSize: 16,
-    color: '#000',
+  moreSettingsContainer:{
+    marginVertical:15,
   },
-  checkoutBtn: {
-    backgroundColor: '#BD8D46',
-    borderRadius: 12,
-    paddingVertical: responsiveHeight(2),
-    alignItems: 'center',
-    marginTop: 10,
+  moreSettingsBtn:{
+    flexDirection:'row',
+    alignItems:'center',
+    backgroundColor:'#F5F5F5',
+    alignSelf:'flex-start',
+    paddingHorizontal:15,
+    paddingVertical:8,
+    borderRadius:20,
   },
-  checkoutText: {
-    
-
-    color: '#fff',
-    fontSize: responsiveFontSize(2.2),
-    fontFamily: 'Raleway-Bold',
+  moreSettingsText:{
+    fontSize:15,
+    color:'#181725',
+    fontFamily:'Poppins-Medium',
+    marginRight:5,
+  },
+  coarseContainer:{
+    marginBottom:10,
+  },
+  radioRow:{
+    flexDirection:'row',
+    justifyContent:'space-between',
+    alignItems:'center',
+    paddingVertical:12,
+    borderBottomWidth:1,
+    borderColor:'#F8F8F8',
+  },
+  radioText:{
+    fontSize:17,
+    fontFamily:'Poppins-Medium',
+    color:'#181725',
+  },
+  checkoutBtn:{
+    backgroundColor:'#BD8D46',
+    borderRadius:20,
+    paddingVertical:responsiveHeight(2),
+    alignItems:'center',
+    marginTop:15,
+    elevation:4,
+    shadowColor:'#BD8D46',
+    shadowOffset:{width:0,height:4},
+    shadowOpacity:0.25,
+    shadowRadius:6,
+  },
+  checkoutText:{
+    color:'#FFFFFF',
+    fontSize:responsiveFontSize(2.1),
+    fontFamily:'Poppins-Bold',
   },
 });
 

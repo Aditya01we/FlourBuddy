@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+
 import {
   StyleSheet,
   Text,
@@ -8,37 +9,41 @@ import {
   SafeAreaView,
   StatusBar,
   Keyboard,
-  Alert
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
+
 import {
   responsiveWidth,
   responsiveHeight,
   responsiveFontSize,
 } from 'react-native-responsive-dimensions';
+
 import AntDesign from 'react-native-vector-icons/AntDesign';
-
-import notifee from '@notifee/react-native';
-
 
 import NotificationServices from '../../services/NotificationServices';
 
 const OTPscreen = ({ navigation }) => {
+  const [otp, setOtp] = useState(['', '', '', '']);
 
+  const [validCode, setValidCode] = useState(null);
 
-const [otp, setOtp] = useState(['', '', '', '']);
-const [validCode, setValidCode] = useState(null);
-  
+  const [loading, setLoading] = useState(false);
+
   const inputRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
-useEffect(() => {
+
+  useEffect(() => {
     handleSendNotification();
   }, []);
 
-const handleChangeText = (text, index) => {
+  const handleChangeText = (text, index) => {
     const newOtp = [...otp];
+
     newOtp[index] = text;
+
     setOtp(newOtp);
 
-    if (text.lengtAh !== 0 && index < 3) {
+    if (text.length !== 0 && index < 3) {
       inputRefs[index + 1].current.focus();
     } else if (text.length !== 0 && index === 3) {
       Keyboard.dismiss();
@@ -50,34 +55,47 @@ const handleChangeText = (text, index) => {
       inputRefs[index - 1].current.focus();
     }
   };
-const handleSendNotification = async () => {
-    
+
+  const handleSendNotification = async () => {
     const randomOtp = Math.floor(1000 + Math.random() * 9000).toString();
+
     setValidCode(randomOtp);
 
-   
     await NotificationServices.requestPermission();
+
     await NotificationServices.showNotification(
       'Verification Code',
-      `Your OTP is: ${randomOtp}`
+      `Your OTP is: ${randomOtp}`,
     );
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     const enteredOtp = otp.join('');
 
-    if (enteredOtp === validCode) {
-      Alert.alert('Success', 'OTP Verified!');
-      navigation.replace('Main');
-    } else {
-      Alert.alert('Error', 'Invalid OTP. Please try again.');
-      setOtp(['', '', '', '']); 
+    if (enteredOtp !== validCode) {
+      Alert.alert('Invalid OTP', 'Please enter correct OTP');
+
+      setOtp(['', '', '', '']);
+
       inputRefs[0].current.focus();
+
+      return;
     }
+
+    setLoading(true);
+
+    setTimeout(() => {
+      setLoading(false);
+
+      Alert.alert('Success', 'OTP Verified Successfully');
+
+      navigation.replace('Main');
+    }, 1200);
   };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
 
       <TouchableOpacity
         style={styles.backButton}
@@ -89,10 +107,13 @@ const handleSendNotification = async () => {
       <View style={styles.container}>
         <Text style={styles.titleText}>OTP Verification</Text>
 
-        <View style={styles.subTextRow}>
-          <Text style={styles.subText}>
-            OTP has been sent to +91-9876543453{' '}
-          </Text>
+        <Text style={styles.subText}>
+          Enter the 4-digit verification code sent to your mobile number
+        </Text>
+
+        <View style={styles.mobileRow}>
+          <Text style={styles.mobileText}>+91-9876543210</Text>
+
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={styles.changeLink}>Change</Text>
           </TouchableOpacity>
@@ -105,7 +126,9 @@ const handleSendNotification = async () => {
               ref={inputRefs[index]}
               style={[
                 styles.otpInput,
-                { borderColor: digit ? '#BC8A45' : '#E2E2E2' },
+                {
+                  borderColor: digit ? '#BC8A45' : '#ECECEC',
+                },
               ]}
               value={digit}
               onChangeText={text => handleChangeText(text, index)}
@@ -113,22 +136,31 @@ const handleSendNotification = async () => {
               keyboardType="number-pad"
               maxLength={1}
               selectionColor="#BC8A45"
-              placeholder="8"
-              placeholderTextColor="#E2E2E2"
+              placeholder="•"
+              placeholderTextColor="#CFCFCF"
             />
           ))}
         </View>
 
-        {/* <View style={styles.resendContainer}>
-          <Text style={styles.resendText}>Resend OTP in </Text>
-          <Text style={styles.timerText}>{timer}s</Text>
-        </View> */}
-
         <TouchableOpacity
           style={styles.verifyBtn}
           onPress={handleVerify}
+          activeOpacity={0.85}
         >
-          <Text style={styles.verifyBtnText}>Verify & Proceed</Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.verifyBtnText}>Verify & Proceed</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.resendContainer}
+          onPress={handleSendNotification}
+        >
+          <Text style={styles.resendText}>Didn’t receive code?</Text>
+
+          <Text style={styles.resendLink}> Resend OTP</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -142,75 +174,156 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+
   backButton: {
     marginLeft: responsiveWidth(5),
-    marginTop: responsiveHeight(5),
+    marginTop: responsiveHeight(4),
   },
+
   container: {
     flex: 1,
+
     paddingHorizontal: responsiveWidth(6),
-    marginTop: responsiveHeight(4),
+
+    marginTop: responsiveHeight(5),
   },
+
   titleText: {
-    fontSize: responsiveFontSize(2.8),
-    fontWeight: '700',
+    fontSize: responsiveFontSize(3.3),
+
+    fontWeight: '800',
+
     color: '#181725',
-    marginBottom: responsiveHeight(1),
   },
-  subTextRow: {
-    flexDirection: 'row',
-    marginBottom: responsiveHeight(6),
-  },
+
   subText: {
-    fontSize: responsiveFontSize(1.7),
+    marginTop: responsiveHeight(1.5),
+
+    fontSize: responsiveFontSize(1.75),
+
     color: '#7C7C7C',
+
+    lineHeight: 24,
   },
+
+  mobileRow: {
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    marginTop: responsiveHeight(2),
+  },
+
+  mobileText: {
+    fontSize: responsiveFontSize(1.8),
+
+    color: '#181725',
+
+    fontWeight: '700',
+  },
+
   changeLink: {
+    marginLeft: responsiveWidth(3),
+
     fontSize: responsiveFontSize(1.7),
+
     color: '#BC8A45',
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+
+    fontWeight: '700',
   },
+
   otpRow: {
     flexDirection: 'row',
+
     justifyContent: 'space-between',
+
+    marginTop: responsiveHeight(7),
   },
+
   otpInput: {
     width: responsiveWidth(18),
+
     height: responsiveWidth(18),
+
+    backgroundColor: '#F8F8F8',
+
     borderWidth: 1.5,
-    borderRadius: 12,
+
+    borderRadius: 18,
+
     textAlign: 'center',
+
     fontSize: responsiveFontSize(3),
-    fontWeight: '600',
+
+    fontWeight: '800',
+
     color: '#181725',
+
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+
+    elevation: 3,
   },
-  resendContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: responsiveHeight(4),
-  },
-  resendText: {
-    fontSize: responsiveFontSize(1.8),
-    color: '#7C7C7C',
-  },
-  timerText: {
-    fontSize: responsiveFontSize(1.8),
-    color: '#BC8A45',
-    fontWeight: '700',
-  },
+
   verifyBtn: {
-    height: responsiveHeight(7.5),
+    height: responsiveHeight(7.2),
+
     width: '100%',
+
     backgroundColor: '#BC8A45',
-    borderRadius: 12,
+
+    borderRadius: 18,
+
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: responsiveHeight(6),
+
+    marginTop: responsiveHeight(8),
+
+    shadowColor: '#BC8A45',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+
+    elevation: 7,
   },
+
   verifyBtnText: {
-    color: '#FFF',
-    fontSize: responsiveFontSize(2.2),
-    fontWeight: '600',
+    color: '#FFFFFF',
+
+    fontSize: responsiveFontSize(2),
+
+    fontWeight: '800',
+
+    letterSpacing: 0.5,
+  },
+
+  resendContainer: {
+    flexDirection: 'row',
+
+    justifyContent: 'center',
+
+    marginTop: responsiveHeight(4),
+  },
+
+  resendText: {
+    fontSize: responsiveFontSize(1.7),
+
+    color: '#7C7C7C',
+  },
+
+  resendLink: {
+    fontSize: responsiveFontSize(1.7),
+
+    color: '#BC8A45',
+
+    fontWeight: '700',
   },
 });
